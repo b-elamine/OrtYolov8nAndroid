@@ -1,10 +1,12 @@
-package com.example.onnxinference;
+package com.example.onnxinference.detectionPipeline;
 
 import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
 import android.content.Context;
+
+import com.example.onnxinference.R;
 
 import java.io.File;
 import java.io.FileOutputStream;

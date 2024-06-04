@@ -2,26 +2,26 @@ package com.example.onnxinference;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.RectF;
 import android.os.Bundle;
 import android.widget.ImageView;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.onnxinference.detectionPipeline.ImageProcessor;
+import com.example.onnxinference.detectionPipeline.Yolov8Inference;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     private List<String> classNames;
     private ImageView imageView;
+    private ImageProcessor imageProcessor;
+    private Yolov8Inference yolo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,17 +29,19 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         classNames = loadClassNames();
-
-        Yolov8Inference yolo = new Yolov8Inference(this);
+        imageProcessor = new ImageProcessor();
+        yolo = new Yolov8Inference(this);
 
         imageView = findViewById(R.id.imageView);
 
         Bitmap bitmap = loadImageFromAssets("test.jpg");
-        float[][][][] inputTensor = preprocessImage(bitmap);
+        float[][][][] inputTensor = imageProcessor.preprocessImage(bitmap);
 
         float[][][] result = yolo.runInference(inputTensor);
 
-        Bitmap resultBitmap = processOutput(result, bitmap);
+        float confidenceThreshold = 0.5f;
+        float iouThreshold = 0.5f;
+        Bitmap resultBitmap = imageProcessor.processOutput(result, bitmap, classNames, confidenceThreshold, iouThreshold);
         imageView.setImageBitmap(resultBitmap);
     }
 
@@ -67,141 +69,5 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
             return null;
         }
-    }
-
-    private float[][][][] preprocessImage(Bitmap bitmap) {
-        Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, 640, 640, true);
-        float[][][][] input = new float[1][3][640][640];
-        for (int y = 0; y < 640; y++) {
-            for (int x = 0; x < 640; x++) {
-                int pixel = resizedBitmap.getPixel(x, y);
-                input[0][0][y][x] = (pixel >> 16 & 0xFF) / 255.0f; // R
-                input[0][1][y][x] = (pixel >> 8 & 0xFF) / 255.0f;  // G
-                input[0][2][y][x] = (pixel & 0xFF) / 255.0f;       // B
-            }
-        }
-        return input;
-    }
-
-    private class Detection {
-        float x, y, width, height, confidence;
-        int classId;
-
-        Detection(float x, float y, float width, float height, float confidence, int classId) {
-            this.x = x;
-            this.y = y;
-            this.width = width;
-            this.height = height;
-            this.confidence = confidence;
-            this.classId = classId;
-        }
-
-        float getArea() {
-            return width * height;
-        }
-
-        RectF toRectF() {
-            return new RectF(x, y, x + width, y + height);
-        }
-    }
-
-    private List<Detection> applyNMS(List<Detection> detections, float iouThreshold) {
-        List<Detection> nmsDetections = new ArrayList<>();
-        Collections.sort(detections, (d1, d2) -> Float.compare(d2.confidence, d1.confidence));
-
-        while (!detections.isEmpty()) {
-            Detection bestDetection = detections.remove(0);
-            nmsDetections.add(bestDetection);
-
-            detections.removeIf(detection -> {
-                float iou = calculateIoU(bestDetection, detection);
-                return iou > iouThreshold;
-            });
-        }
-
-        return nmsDetections;
-    }
-
-    private float calculateIoU(Detection d1, Detection d2) {
-        RectF rect1 = d1.toRectF();
-        RectF rect2 = d2.toRectF();
-
-        float intersectionLeft = Math.max(rect1.left, rect2.left);
-        float intersectionTop = Math.max(rect1.top, rect2.top);
-        float intersectionRight = Math.min(rect1.right, rect2.right);
-        float intersectionBottom = Math.min(rect1.bottom, rect2.bottom);
-
-        if (intersectionLeft < intersectionRight && intersectionTop < intersectionBottom) {
-            float intersectionArea = (intersectionRight - intersectionLeft) * (intersectionBottom - intersectionTop);
-            float unionArea = d1.getArea() + d2.getArea() - intersectionArea;
-            return intersectionArea / unionArea;
-        }
-
-        return 0;
-    }
-
-    private Bitmap processOutput(float[][][] output, Bitmap originalBitmap) {
-        // Confidence threshold to filter out low-confidence detections
-        float confidenceThreshold = 0.5f;
-
-        int numDetections = 8400; // Number of detections
-        int numClasses = 80; // Number of classes (0 to 79)
-        int probabilityStartIndex = 4; // Index where class probabilities start
-
-        int originalWidth = originalBitmap.getWidth();
-        int originalHeight = originalBitmap.getHeight();
-        float scaleX = originalWidth / 640.0f;
-        float scaleY = originalHeight / 640.0f;
-
-        List<Detection> detections = new ArrayList<>();
-
-        for (int i = 0; i < numDetections; i++) {
-            // Extract bounding box coordinates
-            float centerX = output[0][0][i] * scaleX;
-            float centerY = output[0][1][i] * scaleY;
-            float width = output[0][2][i] * scaleX;
-            float height = output[0][3][i] * scaleY;
-
-            // Find the class with the highest probability for every detected box
-            int classId = -1;
-            float maxClassProb = 0;
-            for (int j = probabilityStartIndex; j < probabilityStartIndex + numClasses; j++) {
-                float classProb = output[0][j][i];
-                if (classProb > maxClassProb) {
-                    maxClassProb = classProb;
-                    classId = j - probabilityStartIndex;
-                }
-            }
-
-            // Only consider detections with confidence above the threshold
-            if (maxClassProb > confidenceThreshold) {
-                detections.add(new Detection(centerX - width / 2, centerY - height / 2, width, height, maxClassProb, classId));
-            }
-        }
-
-        // Apply NMS
-        float iouThreshold = 0.5f;
-        List<Detection> nmsDetections = applyNMS(detections, iouThreshold);
-
-        // Create a mutable copy of the original bitmap
-        Bitmap mutableBitmap = originalBitmap.copy(Bitmap.Config.ARGB_8888, true);
-        Canvas canvas = new Canvas(mutableBitmap);
-        Paint paint = new Paint();
-        paint.setColor(Color.RED);
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(2);
-        Paint textPaint = new Paint();
-        textPaint.setColor(Color.RED);
-        textPaint.setTextSize(20);
-
-        for (Detection detection : nmsDetections) {
-            // Draw the bounding box
-            canvas.drawRect(detection.x, detection.y, detection.x + detection.width, detection.y + detection.height, paint);
-            // Draw the class name and confidence
-            String className = classNames.get(detection.classId);
-            canvas.drawText(className + ": " + String.format("%.2f", detection.confidence), detection.x, detection.y - 10, textPaint);
-        }
-
-        return mutableBitmap;
     }
 }
