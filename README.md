@@ -1,3 +1,85 @@
-# On-Device Inference in Anroid app Using ORT (ONNX Runtime)
-### Yolov8n Object detection
-![ONNX_Runtime_EP1](https://github.com/b-elamine/onnxruntimeYolov8AndroidApplication/assets/61559990/ad1af161-397b-40a8-8c5d-94cc8e8b2005)
+# 📌 ONNX YOLOv8 Android Object Detection App
+
+*A real-time object detection Android application powered by YOLOv8 and ONNX Runtime.*
+
+---
+
+## 📋 Table of Contents
+
+- [🌐 Project Overview](#-project-overview)
+- [✨ Key Features](#-key-features)
+- [⚙️ Technologies Used](#-technologies-used)
+- [📂 Project Structure](#-project-structure)
+- [🚀 Setup & Installation](#-setup--installation)
+- [🔍 Code Deep Dive](#-code-deep-dive)
+- [🔧 Customization & Extensions](#-customization--extensions)
+- [⚠️ Troubleshooting](#-troubleshooting)
+- [📜 License](#-license)
+- [🎯 Conclusion](#-conclusion)
+
+---
+
+## 🌐 Project Overview
+
+This Android application demonstrates object detection using a YOLOv8 model exported to ONNX format. It takes an image input, runs inference with ONNX Runtime, and displays results with bounding boxes, class labels, and confidence scores.
+
+### ✅ Highlights
+
+- Works offline – no network dependency.
+- Lightweight and mobile-optimized.
+- Extensible and cleanly structured codebase.
+
+---
+
+## ✨ Key Features
+
+### 🔍 YOLOv8 Inference (ONNX)
+- Loads and executes a YOLOv8n model in ONNX format.
+- Runs inference with efficient mobile performance via ONNX Runtime.
+
+### 🖼️ Image Processing
+- **Preprocessing**: Resize to 640×640, normalize to `[0, 1]` range.
+- **Postprocessing**: Applies confidence filtering and Non-Maximum Suppression (NMS).
+
+### 🧠 Detection Output
+- Draws bounding boxes with class names and confidence values.
+- Supports dynamic class names from `labels.txt`.
+
+### 📱 Android Optimized
+- Designed for Android 7.0+ (API 24+).
+- Uses native bitmap processing for visualization.
+
+---
+
+## ⚙️ Technologies Used
+
+| Technology       | Description                          |
+|------------------|--------------------------------------|
+| Android SDK      | Core Android app development         |
+| Java             | Main development language            |
+| ONNX Runtime     | Executes the YOLOv8 ONNX model       |
+| Bitmap/Canvas API| For drawing detections on images     |
+
+---
+
+
+---
+
+## 🚀 Setup & Installation
+
+### 🔧 Prerequisites
+
+- Android Studio (latest stable)
+- Android device or emulator (API 24+)
+- `yolov8n.onnx` and `labels.txt` (in `res/raw/`)
+
+### 📥 Installation Steps
+
+```bash
+git clone https://github.com/your-repo/onnx-yolov8-android.git
+cd onnx-yolov8-android
+```
+
+### 🎯 Conclusion
+This Android app showcases the integration of YOLOv8 object detection via ONNX Runtime. It is ideal for mobile AI projects and can serve as a foundation for more advanced applications, including real-time video analysis, robotics, and industrial automation.
+
