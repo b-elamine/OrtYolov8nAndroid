@@ -4,21 +4,6 @@
 
 ---
 
-## 📋 Table of Contents
-
-- [🌐 Project Overview](#-project-overview)
-- [✨ Key Features](#-key-features)
-- [⚙️ Technologies Used](#-technologies-used)
-- [📂 Project Structure](#-project-structure)
-- [🚀 Setup & Installation](#-setup--installation)
-- [🔍 Code Deep Dive](#-code-deep-dive)
-- [🔧 Customization & Extensions](#-customization--extensions)
-- [⚠️ Troubleshooting](#-troubleshooting)
-- [📜 License](#-license)
-- [🎯 Conclusion](#-conclusion)
-
----
-
 ## 🌐 Project Overview
 
 This Android application demonstrates object detection using a YOLOv8 model exported to ONNX format. It takes an image input, runs inference with ONNX Runtime, and displays results with bounding boxes, class labels, and confidence scores.
